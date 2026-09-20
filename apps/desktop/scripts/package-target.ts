@@ -230,7 +230,7 @@ export function desktopElectronBuilderArguments(
     'exec',
     'electron-builder',
     '--config',
-    'electron-builder.config.mjs',
+    'electron-builder-highcom.config.mjs',
     target.builderPlatform,
     ...(artifact === undefined ? [] : [artifact.format]),
     target.builderArch,
@@ -287,7 +287,8 @@ async function main(): Promise<void> {
   for (const name of WINDOWS_SIGNING_ENV_NAMES) {
     if (!invocation.unsigned && process.env[name] !== undefined) electronBuilderEnv[name] = process.env[name]
   }
-  await runPnpm(['run', 'build:official'], buildEnv, REPOSITORY_ROOT)
+  // Company client profile: the caller supplies DSH_CLIENT_*, so do not force the official profile.
+  await runPnpm(['run', 'build'], buildEnv, REPOSITORY_ROOT)
   await runPnpm(['run', 'release:pack', '--family', 'dsh', '--out', buildPaths.packedDsh], buildEnv, REPOSITORY_ROOT)
   await runPnpm([
     '--dir',

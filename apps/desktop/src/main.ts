@@ -22,6 +22,7 @@ import { claimDesktopSingleInstance } from './single-instance.ts'
 import { DesktopUpdateCoordinator } from './update-coordinator.ts'
 import { desktopErrorState } from './startup-error.ts'
 import { startupFailureDocument } from './startup-document.ts'
+import { highcomAboutInfo } from './highcom-about.ts'
 
 const SCHEME = 'dsh-app'
 let focusPrimaryWindow = (): void => {}
@@ -159,6 +160,7 @@ async function main(): Promise<void> {
   let startup: Promise<void> | undefined
   let mainWindow: BrowserWindow | undefined
   let pluginWindow: BrowserWindow | undefined
+  let aboutWindow: BrowserWindow | undefined
   let shellInstallerOwnsQuit = false
   let updateState: DesktopUpdateState = { phase: 'idle' }
   const locale = resolveDesktopLocale(app.getLocale())
@@ -434,9 +436,30 @@ async function main(): Promise<void> {
     void pluginWindow.loadURL(`${SCHEME}://shell/plugin-manager.html`)
   }
 
+  const openAboutWindow = (): void => {
+    if (aboutWindow !== undefined && !aboutWindow.isDestroyed()) {
+      aboutWindow.focus()
+      return
+    }
+    const info = highcomAboutInfo({
+      version: app.getVersion(),
+      runtimeRoot: resources.dsh,
+      resourcesRoot: process.resourcesPath,
+    })
+    aboutWindow = createWindow(managementPreload)
+    aboutWindow.setSize(760, 680)
+    aboutWindow.setTitle(messages.aboutTitle)
+    aboutWindow.once('ready-to-show', () => { aboutWindow?.show() })
+    aboutWindow.once('closed', () => { aboutWindow = undefined })
+    // The About page reads its payload from the fragment, so reloading the window keeps the same baseline.
+    void aboutWindow.loadURL(`${SCHEME}://shell/highcom-about.html#${encodeURIComponent(JSON.stringify(info))}`)
+  }
+
   Menu.setApplicationMenu(Menu.buildFromTemplate([{
     label: process.platform === 'darwin' ? app.name : messages.application,
     submenu: [
+      { label: messages.aboutTitle, click: openAboutWindow },
+      { type: 'separator' },
       {
         label: development === undefined ? messages.pluginsMenu : messages.pluginsMenuPackagedOnly,
         accelerator: 'CmdOrCtrl+,',
