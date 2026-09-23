@@ -1,15 +1,14 @@
 {
-  "id": "/",
-  "name": "Highcom Work",
-  "short_name": "HCWork",
-  "start_url": "/",
-  "scope": "/",
+  "name": "DeepSeek Harness",
+  "short_name": "DSH",
+  "start_url": "./",
+  "scope": "./",
   "display": "fullscreen",
   "icons": [
     {
-      "src": "/favicon.png",
-      "sizes": "256x256",
-      "type": "image/png",
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any"
     }
   ]

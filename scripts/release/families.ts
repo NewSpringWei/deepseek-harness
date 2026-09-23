@@ -12,11 +12,9 @@
 import { globSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
-  assertClientBuildEnvironment,
   officialClientBuildEnvironment,
   readClientBuildRecord,
 } from '../client-build-environment.ts'
-import { PUBLIC_EXPERIMENTAL_PACKAGE_DIRECTORIES } from '../experimental-package-policy.ts'
 import { validateTarballPayload } from '../publication-payload.ts'
 
 /**
@@ -320,37 +318,18 @@ export abstract class ReleaseFamily {
   abstract readonly installedEntry: InstalledEntry | undefined
 }
 
-/**
- * Client build profile this deployment's desktop build selects.
- *
- * The desktop packaging chain builds the client without `--profile`, so the
- * profile is the public `DSH_CLIENT_BUILD_PROFILE` value the packaging
- * environment supplies; it must equal the value the packaging command sets.
- */
-const HIGHCOM_CLIENT_BUILD_PROFILE = 'highcom'
-
 /** Release packages and apps: one shared version across the whole family. */
 class DshFamily extends ReleaseFamily {
   readonly id = 'dsh'
   readonly patterns = [
-    'packages/!(experimental)/*/package.json',
+    'packages/*/*/package.json',
     'apps/*/package.json',
-    ...PUBLIC_EXPERIMENTAL_PACKAGE_DIRECTORIES.map(directory => `${directory}/package.json`),
   ] as const
   readonly tagPrefix = 'dsh-v'
 
-  /**
-   * Require current artifacts from a complete client build of a known profile.
-   *
-   * This deployment's desktop build selects its own client profile, whose public
-   * environment necessarily differs from the official one; every other profile
-   * must still match the official environment exactly. Reading the record first
-   * keeps its artifact-freshness check in force on both paths.
-   */
+  /** Require current artifacts from a complete official client build. */
   override verifyBuildArtifacts(root: string): void {
-    const environment = readClientBuildRecord(root).environment
-    if (environment.DSH_CLIENT_BUILD_PROFILE === HIGHCOM_CLIENT_BUILD_PROFILE) return
-    assertClientBuildEnvironment(environment, officialClientBuildEnvironment(root))
+    readClientBuildRecord(root, officialClientBuildEnvironment(root))
   }
 
   /**
