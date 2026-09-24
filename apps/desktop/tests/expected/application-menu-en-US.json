@@ -1,7 +1,7 @@
 [
   {
     "role": "hide",
-    "label": "Hide Highcom Work"
+    "label": "Hide DeepSeek Harness"
   },
   {
     "role": "hideOthers",
@@ -13,6 +13,6 @@
   },
   {
     "role": "quit",
-    "label": "Quit Highcom Work"
+    "label": "Quit DeepSeek Harness"
   }
 ]
