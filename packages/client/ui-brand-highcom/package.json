@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-brand-highcom",
   "description": "Highcom Work brand occupants for the Web client's sidebar and conversation-hero slots",
-  "version": "0.1.7-alpha.2",
+  "version": "0.1.7-rc.1",
   "publishConfig": {
     "access": "public"
   },

@@ -47,8 +47,10 @@
     - id: subagent-model-selection-settings
       name: '@deepseek-ai/dsh-tool-subagent/model-selection-settings'
 
+    # Highcom Work: the feedback surface is off; its browser half below is gated with it.
     - id: message-feedback
       name: '@deepseek-ai/dsh-message-feedback'
+      disabled: true
       config:
         maxNoteBytes: 8192
 
@@ -115,8 +117,12 @@
 
     # Configuration-surface reads and writes over Typert Remote. Each method
     # reports an actionable error when its settings-domain provider is absent.
+    # Highcom Work gates the DeepSeek account surface off. account-controller below
+    # stays enabled: the shell's own startup path reads the `account` RPC namespace
+    # (account-backend.ts), so disabling that row fails the first window open.
     - id: ui-settings-account
       name: '@deepseek-ai/dsh-client-ui-settings-account'
+      disabled: true
 
     - id: account-controller
       name: '@deepseek-ai/dsh-api-account-controller'
@@ -293,6 +299,11 @@
     - id: ui-brand-official
       name: '@deepseek-ai/dsh-client-ui-brand-official'
 
+    # Highcom Work occupants for the same slots. The two occupant sets gate on
+    # opposite build profiles, so exactly one of them registers.
+    - id: ui-brand-highcom
+      name: '@deepseek-ai/dsh-client-ui-brand-highcom'
+
     - id: ui-attachment
       name: '@deepseek-ai/dsh-client-ui-attachment'
 
@@ -360,8 +371,10 @@
     # The feedback surface: Like/Dislike in the assistant-message action
     # strip, the feedback dialog behind Dislike and /feedback with its
     # acknowledgement toast, over the messageFeedback and sessionFeedback Remotes.
+    # Highcom Work gates it off here and in the host row above.
     - id: ui-message-feedback
       name: '@deepseek-ai/dsh-client-ui-message-feedback'
+      disabled: true
 
     # Model selection: the /model popupSelect + composer seat over session.models.
     - id: ui-model-selection

@@ -199,7 +199,7 @@ describe('parallel macOS artifacts', () => {
       const appPath = join('private build', format, 'DeepSeek Harness.app')
       const output = join(dirname(appPath), 'artifacts')
       expect(desktopElectronBuilderArguments(target, false, { format, appPath, output })).toEqual([
-        'exec', 'electron-builder', '--config', 'electron-builder.config.mjs',
+        'exec', 'electron-builder', '--config', 'electron-builder-highcom.config.mjs',
         '--mac', format, '--arm64', '--publish', 'never',
         '--config.mac.notarize=false',
         '--prepackaged', appPath, '--config.directories.output', output,

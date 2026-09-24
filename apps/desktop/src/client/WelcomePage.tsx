@@ -158,7 +158,7 @@ export function Welcome({ api }: { api: WelcomeApi }) {
   return <>
     <div className="titlebar" aria-hidden="true" />
     <main className="welcome" aria-labelledby={heading}>
-      <img className="brand" src="assets/welcome-brand.svg" alt={m.welcomeBrand} width="472" height="40" />
+      <img className="brand" src="assets/highcom-welcome-brand.svg" alt={m.welcomeBrand} width="240" height="40" />
       <div id="tagline" className="tagline" hidden={page !== 'entry'}>
         <h1 id="welcome-heading"><span>{m.welcomeTaglineBefore}</span><em>{m.welcomeTaglineBrand}</em><span>{m.welcomeTaglineAfter}</span></h1>
         <p id="welcome-description">{m.welcomeDescription}</p>
@@ -191,9 +191,11 @@ export function Welcome({ api }: { api: WelcomeApi }) {
           disabled={cancelling || phase === 'committing' || phase === 'succeeded' || (phase === 'initializing' && !attempt?.id)}
           onClick={() => { void cancel() }}>{m.welcomeAuthCancel}</button>
       </div>
+      {/* Highcom Work: the entry page welcomes and nothing more. The key and account
+          pages stay in this file but are unreachable — a provider key is configured in
+          Settings, so no credential is ever entered here. */}
       <div id="entry-actions" className="actions" hidden={page !== 'entry'}>
-        <button id="sign-in" className="primary" type="button" onClick={() => { void start() }}>{m.welcomeSignIn}</button>
-        <button ref={keyButton} id="api-key" className="secondary" type="button" onClick={() => { navigate('key') }}>{m.welcomeApiKey}</button>
+        <button ref={keyButton} id="get-started" className="primary" type="button" disabled={busy} onClick={() => { void skip() }}>{m.welcomeStart}</button>
       </div>
       <div id="key-actions" className="actions" hidden={page !== 'key'}>
         <button id="save-key" className="primary" type="submit" form="key-form" disabled={busy || draft.trim() === ''}>{m.welcomeKeySave}</button>

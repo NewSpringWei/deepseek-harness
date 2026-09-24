@@ -9,7 +9,7 @@ import type { MenuItemConstructorOptions, MessageBoxOptions } from 'electron'
 import { DESKTOP_IPC, type DesktopUpdateState } from '../src/ipc.ts'
 import { MANDATORY_IPC } from '../src/mandatory-update-ipc.ts'
 import { DesktopHostFatalError, DesktopHostUncleanExitError } from '../src/host-process.ts'
-import { en } from '../src/locale.ts'
+import { en, zh as zhCopy } from '../src/locale.ts'
 import { DesktopUpdatePreparationError } from '../src/update-error.ts'
 import { writeCrashReport } from '../src/crash-report.ts'
 
@@ -438,8 +438,9 @@ describe('desktop main startup', () => {
     await vi.advanceTimersByTimeAsync(0)
     const zh = locale === 'zh-CN'
     expect(harness.dialog.showMessageBox).toHaveBeenLastCalledWith(expect.objectContaining({
-      type: 'info', title: zh ? '关于 DeepSeek Harness' : 'About DeepSeek Harness', message: 'DeepSeek Harness',
-      detail: zh ? '版本 V1.0.0' : 'Version V1.0.0', buttons: [zh ? '确定' : 'OK'], cancelId: 0,
+      type: 'info', title: zh ? '关于 Highcom Work' : 'About Highcom Work', message: 'Highcom Work',
+      detail: zh ? `版本 V1.0.0\n\n${zhCopy.aboutLicense}` : `Version V1.0.0\n\n${en.aboutLicense}`,
+      buttons: [zh ? '确定' : 'OK'], cancelId: 0,
     }))
     // A dialog that cannot open is logged, not surfaced as an unhandled rejection.
     harness.dialog.showMessageBox.mockRejectedValueOnce(new Error('overlay unavailable'))
@@ -572,8 +573,9 @@ describe('desktop main startup', () => {
       vi.stubEnv('DSH_DESKTOP_UPDATE_JOURNAL_DIR', directory)
       await readyForUpdate()
       harness.publishUpdate({ phase: 'error', failedOperation: 'download', version: '1.2.3', message: 'ENOSPC secret-url' })
-      const checkUpdates = applicationMenuItems().find(item => item.label === en.checkUpdatesMenu)!.click as () => void
-      checkUpdates()
+      // Highcom Work removes the application menu's manual check entry, so the
+      // renderer's update IPC is the remaining user-reachable prompt trigger.
+      await invoke(DESKTOP_IPC.updatesOpen, 'app')
       await vi.advanceTimersByTimeAsync(0)
       for (const host of harness.hosts) host.exited.resolve()
       harness.app.quit()
@@ -582,7 +584,7 @@ describe('desktop main startup', () => {
       expect(files).toHaveLength(1)
       const contents = readFileSync(join(directory, files[0]!), 'utf8')
       const records = contents.trim().split('\n').map(line => JSON.parse(line) as { event: string })
-      expect(records.map(row => row.event)).toEqual(expect.arrayContaining(['started', 'workspace-ready', 'state', 'check-requested', 'quit-requested']))
+      expect(records.map(row => row.event)).toEqual(expect.arrayContaining(['started', 'workspace-ready', 'state', 'quit-requested']))
       expect(contents).toContain('ENOSPC')
       expect(contents).not.toContain('secret-url')
     } finally {
@@ -760,7 +762,7 @@ describe('desktop main startup', () => {
     expect(() => handler(event, 'application', NaN, 34)).toThrow('invalid popup request')
     const application = handler(event, 'application', 48, 34)
     expect(harness.menu.buildFromTemplate.mock.lastCall![0].map(item => item.label ?? item.type)).toEqual([
-      '关于 DeepSeek Harness', 'separator', '检查更新…', 'separator', '退出',
+      '关于 Highcom Work', 'separator', '退出',
     ])
     expect(harness.popup.mock.lastCall![0]).toMatchObject({ window, x: 48, y: 34 })
     expect(harness.popup.mock.lastCall![0].callback).toBeTypeOf('function')
@@ -796,9 +798,11 @@ describe('desktop main startup', () => {
       ? ['Desktop test', 'fileMenu', 'editMenu', 'windowMenu']
       : ['Application', 'editMenu'])
     const application = template[0]!.submenu as MenuItemConstructorOptions[]
+    // Highcom Work removes the menu's manual "Check for Updates" entry and the
+    // separator that introduced it, leaving About, the remaining separators, and Quit.
     expect(application.filter(item => item.visible !== false).map(describeItem)).toEqual(platform === 'darwin'
-      ? ['about', 'separator', en.checkUpdatesMenu, 'separator', 'hide', 'hideOthers', 'unhide', 'separator', 'quit']
-      : ['about', 'separator', en.checkUpdatesMenu, 'separator', 'quit'])
+      ? ['about', 'separator', 'hide', 'hideOthers', 'unhide', 'separator', 'quit']
+      : ['about', 'separator', 'quit'])
     expect(harness.menu.setApplicationMenu).toHaveBeenCalledOnce()
   })
 
@@ -1037,7 +1041,7 @@ describe('desktop main startup', () => {
     expect(request.mock.calls[0]![1]!.headers).toMatchObject({ 'x-client-bundle-id': 'com.deepseek.dsh', 'x-client-version': '1.0.0' })
   })
 
-  it('keeps one checking dialog open until the manual check settles, then reports the current version', async () => {
+  it('keeps one checking dialog open until the prompted check settles, then reports the current version', async () => {
     await readyForUpdate()
     const checked = Promise.withResolvers<DesktopUpdateState>()
     const checking = Promise.withResolvers<AbortSignal>()
@@ -1050,11 +1054,8 @@ describe('desktop main startup', () => {
       expect((harness.dialog.showMessageBox.mock.calls[0]![0] as { signal: AbortSignal }).signal.aborted).toBe(false)
       return Promise.resolve({ response: 0 })
     })
-    const submenu = applicationMenuItems()
-    const action = submenu.find(item => item.label === 'Check for Updates…')
-    expect(action?.click).toBeTypeOf('function')
-    // Electron supplies menu arguments that this callback does not consume.
-    Reflect.apply(action!.click!, undefined, [])
+    // Highcom Work removes the menu's manual check entry; the renderer's update IPC is
+    // the remaining prompt trigger, and one prompt still owns the check while it settles.
     const prompt = Promise.resolve(invoke(DESKTOP_IPC.updatesOpen, 'app'))
     const signal = await checking.promise
     await requested.promise
@@ -1122,34 +1123,38 @@ describe('desktop main startup', () => {
     }
   })
 
-  it('lets a confirmed mandatory policy preempt an ordinary result dialog', async () => {
+  it('lets a confirmed mandatory policy preempt the ordinary checking dialog', async () => {
     harness.embeddedPolicy = { origin: 'https://policy.example.com',
       allowedPageOrigins: ['https://downloads.example.com'] }
     const policy = Promise.withResolvers<Response>()
-    const available = Promise.withResolvers<AbortSignal>()
+    const checking = Promise.withResolvers<AbortSignal>()
+    const checked = Promise.withResolvers<DesktopUpdateState>()
     vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockImplementation(() => policy.promise))
-    harness.updateCheck.mockResolvedValue({ phase: 'available', version: '1.0.1-nightly.1' })
-    harness.dialog.showMessageBox.mockImplementation(({ signal, message }: { signal?: AbortSignal; message: string }) => {
-      if (message !== en.updateAvailable || signal === undefined) return Promise.resolve({ response: 1 })
-      available.resolve(signal)
+    harness.updateCheck.mockImplementation(() => checked.promise)
+    harness.dialog.showMessageBox.mockImplementation(({ signal }: { signal?: AbortSignal }) => {
+      if (signal === undefined) return Promise.resolve({ response: 1 })
+      checking.resolve(signal)
       return new Promise((resolve) => { signal.addEventListener('abort', () => { resolve({ response: 0 }) }, { once: true }) })
     })
     await readyForUpdate()
-    const submenu = applicationMenuItems()
-    const action = submenu.find(item => item.label === 'Check for Updates…')
-    Reflect.apply(action!.click!, undefined, [])
+    // Highcom Work removes the menu's manual check entry, so the ordinary "update
+    // available" result dialog this case used to preempt is unreachable. The renderer's
+    // update IPC still opens the checking dialog, and a confirmed mandatory policy aborts
+    // that ordinary dialog through the same registry.
     const operation = Promise.resolve(invoke(DESKTOP_IPC.updatesOpen, 'app'))
     try {
-      const signal = await available.promise
+      const signal = await checking.promise
       policy.resolve(Response.json({ code: 40005,
         data: { show_content: { title: 'Update required', detail: 'Please update' },
           desktop_app_link: 'https://downloads.example.com/' } }))
       await harness.policyBlocked.promise
       expect(signal.aborted).toBe(true)
+      checked.resolve({ phase: 'available', version: '1.0.1-nightly.1' })
       await operation
       expect(harness.updateDownload).not.toHaveBeenCalled()
     } finally {
       policy.resolve(Response.json({ code: 500 }, { status: 503 }))
+      checked.resolve({ phase: 'idle' })
       await operation
     }
   })
