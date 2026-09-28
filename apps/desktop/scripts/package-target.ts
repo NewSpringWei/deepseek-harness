@@ -266,7 +266,7 @@ export function desktopElectronBuilderArguments(
     'exec',
     'electron-builder',
     '--config',
-    'electron-builder.config.mjs',
+    'electron-builder-highcom.config.mjs',
     target.builderPlatform,
     ...(artifact === undefined ? [] : [artifact.format]),
     target.builderArch,
@@ -447,7 +447,8 @@ export async function packageTarget(
         { cwd: APP_ROOT, env: electronBuilderEnv, timeoutMs: 60_000 })
     })
   }
-  await execute(['run', 'build:official'], buildEnv, REPOSITORY_ROOT)
+  // Company client profile: the caller supplies DSH_CLIENT_*, so do not force the official profile.
+  await execute(['run', 'build'], buildEnv, REPOSITORY_ROOT)
   await execute(['run', 'release:pack', '--family', 'dsh', '--out', buildPaths.packedDsh, ...packArguments], buildEnv, REPOSITORY_ROOT)
   await execute([
     '--dir',

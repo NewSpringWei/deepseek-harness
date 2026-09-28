@@ -54,8 +54,14 @@ export default {
   extraResources: [
     // The packaged `icon.png` is what the native About panel and the update surfaces
     // read; upstream sources it from its own `icon-windows.png`, so replace that entry.
-    ...base.extraResources.filter(entry => entry.to !== 'icon.png'),
+    // 0.1.7-rc.2 added the Windows tray bitmap under the same rule: upstream renders it from
+    // its own icon source, so a branded build would show the upstream mark in the notification
+    // area. build-highcom/make-tray-icon.ps1 renders the deployment mark at upstream's seven
+    // sizes into build-highcom/tray-windows.ico, which must exist before packaging.
+    // macOS keeps the Dock and ships no tray entry, so the upstream list has nothing to drop there.
+    ...base.extraResources.filter(entry => entry.to !== 'icon.png' && entry.to !== 'tray.ico'),
     { from: fileURLToPath(new URL('./build-highcom/icon.png', import.meta.url)), to: 'icon.png' },
+    { from: fileURLToPath(new URL('./build-highcom/tray-windows.ico', import.meta.url)), to: 'tray.ico' },
     { from: fileURLToPath(new URL('../../LICENSE', import.meta.url)), to: 'LICENSE' },
     {
       from: fileURLToPath(new URL('../../THIRD_PARTY_NOTICES.md', import.meta.url)),

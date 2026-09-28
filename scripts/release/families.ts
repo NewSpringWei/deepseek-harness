@@ -12,6 +12,7 @@
 import { globSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
+  assertClientBuildEnvironment,
   officialClientBuildEnvironment,
   readClientBuildRecord,
 } from '../client-build-environment.ts'
@@ -318,6 +319,15 @@ export abstract class ReleaseFamily {
   abstract readonly installedEntry: InstalledEntry | undefined
 }
 
+/**
+ * Client build profile this deployment's desktop build selects.
+ *
+ * The desktop packaging chain builds the client without `--profile`, so the
+ * profile is the public `DSH_CLIENT_BUILD_PROFILE` value the packaging
+ * environment supplies; it must equal the value the packaging command sets.
+ */
+const HIGHCOM_CLIENT_BUILD_PROFILE = 'highcom'
+
 /** Release packages and apps: one shared version across the whole family. */
 class DshFamily extends ReleaseFamily {
   readonly id = 'dsh'
@@ -327,9 +337,18 @@ class DshFamily extends ReleaseFamily {
   ] as const
   readonly tagPrefix = 'dsh-v'
 
-  /** Require current artifacts from a complete official client build. */
+  /**
+   * Require current artifacts from a complete client build of a known profile.
+   *
+   * This deployment's desktop build selects its own client profile, whose public
+   * environment necessarily differs from the official one; every other profile
+   * must still match the official environment exactly. Reading the record first
+   * keeps its artifact-freshness check in force on both paths.
+   */
   override verifyBuildArtifacts(root: string): void {
-    readClientBuildRecord(root, officialClientBuildEnvironment(root))
+    const environment = readClientBuildRecord(root).environment
+    if (environment.DSH_CLIENT_BUILD_PROFILE === HIGHCOM_CLIENT_BUILD_PROFILE) return
+    assertClientBuildEnvironment(environment, officialClientBuildEnvironment(root))
   }
 
   /**
