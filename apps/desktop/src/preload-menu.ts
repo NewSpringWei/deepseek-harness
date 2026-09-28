@@ -72,7 +72,7 @@ export function installWindowsMenu(): { update(): void; dispose(): void } {
     button.addEventListener('keydown', (event) => {
       if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
         event.preventDefault()
-        const next = buttons[0]
+        const next = buttons[index === 0 ? 1 : 0]
         button.tabIndex = -1
         next.tabIndex = 0
         next.focus()
@@ -84,8 +84,7 @@ export function installWindowsMenu(): { update(): void; dispose(): void } {
     bar.append(button)
     return button
   }
-  // Highcom Work: the caption bar offers the application menu only, so no Edit entry.
-  const buttons = [createButton('application', 0)] as const
+  const buttons = [createButton('application', 0), createButton('edit', 1)] as const
   shadow.append(style, bar)
   const mount = (): void => {
     // AppFrame owns this seat; boot readiness alone precedes the rendered application.
@@ -100,6 +99,7 @@ export function installWindowsMenu(): { update(): void; dispose(): void } {
     const { messages } = resolveDesktopLocale(document.documentElement.lang)
     bar.setAttribute('aria-label', messages.menuBar)
     buttons[0].textContent = messages.application
+    buttons[1].textContent = messages.edit
   }
   update()
   return {
