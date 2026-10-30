@@ -1,0 +1,43 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/client/ui-brand-highcom/README.md
+/:
+  en: c41be64fa2cbee3e
+  zh: b463f31ebda3811e
+/deepseek-ai-dsh-client-ui-brand-highcom:
+  en: c85beee2239d079b
+  zh: 99b6944b544ae77c
+/deepseek-ai-dsh-client-ui-brand-highcom/summary:
+  en: 4b0dfa6b06d1ff7f
+  zh: b38eb032c9d522ba
+/deepseek-ai-dsh-client-ui-brand-highcom/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-client-ui-brand-highcom/use-this-package:
+  en: 27d825b611579507
+  zh: 107fec88406c9f77
+/deepseek-ai-dsh-client-ui-brand-highcom/use-this-package/choosing-the-profile:
+  en: a1a34e2998a81edb
+  zh: 92d31111b20e9f84
+/deepseek-ai-dsh-client-ui-brand-highcom/use-this-package/replacing-the-brand:
+  en: 255f29d9147420c1
+  zh: f1880f8df302cbd7
+/deepseek-ai-dsh-client-ui-brand-highcom/understand-the-implementation:
+  en: baacf4041df31eec
+  zh: 325e4608a2040439
+/deepseek-ai-dsh-client-ui-brand-highcom/further-exploration:
+  en: d53cb3295dc08d01
+  zh: b30063c0bc5be310
+/deepseek-ai-dsh-client-ui-brand-highcom/model-experience:
+  en: 618008c7641070e7
+  zh: a84fada3dd1909f6
+/deepseek-ai-dsh-client-ui-brand-highcom/model-experience/kv-cache-effect:
+  en: ca75c51c89c2c9b0
+  zh: 6e1c9a8fdde89577
+/deepseek-ai-dsh-client-ui-brand-highcom/known-limitations-and-deferred-work:
+  en: cf3755215fec8c4e
+  zh: 7f85d2192881aa2f
+/deepseek-ai-dsh-client-ui-brand-highcom/known-limitations-and-deferred-work/dev-note:
+  en: 322a27e127751b75
+  zh: da1469cbcf6789ca
