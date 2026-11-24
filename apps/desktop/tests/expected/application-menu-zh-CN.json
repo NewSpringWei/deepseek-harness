@@ -1,10 +1,30 @@
 [
   {
+    "label": "关于 DeepSeek Harness",
+    "role": "about"
+  },
+  {
+    "type": "separator"
+  },
+  {
+    "label": "检查更新…"
+  },
+  {
     "label": "管理 dsh 命令…"
   },
   {
+    "type": "separator"
+  },
+  {
+    "role": "toggleDevTools",
+    "label": "开发者工具"
+  },
+  {
+    "type": "separator"
+  },
+  {
     "role": "hide",
-    "label": "隐藏 Highcom Work"
+    "label": "隐藏 DeepSeek Harness"
   },
   {
     "role": "hideOthers",
@@ -15,7 +35,10 @@
     "label": "显示全部"
   },
   {
+    "type": "separator"
+  },
+  {
     "role": "quit",
-    "label": "退出 Highcom Work"
+    "label": "退出 DeepSeek Harness"
   }
 ]

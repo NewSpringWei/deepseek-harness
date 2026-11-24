@@ -1,10 +1,30 @@
 [
   {
+    "label": "About DeepSeek Harness",
+    "role": "about"
+  },
+  {
+    "type": "separator"
+  },
+  {
+    "label": "Check for Updates…"
+  },
+  {
     "label": "Manage dsh Command…"
   },
   {
+    "type": "separator"
+  },
+  {
+    "role": "toggleDevTools",
+    "label": "Developer tools"
+  },
+  {
+    "type": "separator"
+  },
+  {
     "role": "hide",
-    "label": "Hide Highcom Work"
+    "label": "Hide DeepSeek Harness"
   },
   {
     "role": "hideOthers",
@@ -15,7 +35,10 @@
     "label": "Show All"
   },
   {
+    "type": "separator"
+  },
+  {
     "role": "quit",
-    "label": "Quit Highcom Work"
+    "label": "Quit DeepSeek Harness"
   }
 ]

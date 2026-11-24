@@ -178,6 +178,7 @@ const processBoundTests = [
   'packages/llm/llm-pi-ai/tests/adapter.spec.ts',
   'packages/boot/app-boot/tests/app-boot.spec.ts',
   'packages/workflow/workflow-ptc/tests/workflow-ptc.spec.ts',
+  'packages/ptc-runtime/ptc-runtime-node/tests/imports.spec.ts',
 ]
 
 // Claude Code's test-kit module names, served by the mods bridge's test support so the example mods' tests import them unchanged.
@@ -190,8 +191,14 @@ const claudeCodeTestingAliases = {
 // only in built `lib/` output. On a clean checkout Vite resolves that import while transforming the
 // entry, before `vi.mock` can answer it, so the jsdom assembly suites need a resolvable stand-in.
 const liveshareRemoteBuild = fileURLToPath(new URL('./packages/experimental/liveshare/lib/typert.remote-client.js', import.meta.url))
-const generatedRemoteAliases = existsSync(liveshareRemoteBuild) ? {} : {
-  '@deepseek-ai/dsh-experimental-liveshare/remote': fileURLToPath(new URL('./packages/experimental/liveshare/tests/generated-remote-stub.ts', import.meta.url)),
+const chatImportRemoteBuild = fileURLToPath(new URL('./packages/experimental/deepseek-chat-import/lib/typert.remote-client.js', import.meta.url))
+const generatedRemoteAliases = {
+  ...existsSync(liveshareRemoteBuild) ? {} : {
+    '@deepseek-ai/dsh-experimental-liveshare/remote': fileURLToPath(new URL('./packages/experimental/liveshare/tests/generated-remote-stub.ts', import.meta.url)),
+  },
+  ...existsSync(chatImportRemoteBuild) ? {} : {
+    '@deepseek-ai/dsh-deepseek-chat-import/remote': fileURLToPath(new URL('./packages/experimental/deepseek-chat-import/tests/generated-remote-stub.ts', import.meta.url)),
+  },
 }
 const testingAliases = { ...claudeCodeTestingAliases, ...generatedRemoteAliases }
 
@@ -236,7 +243,8 @@ export default defineConfig({
         resolve: { alias: testingAliases },
         test: {
           name: 'process-bound',
-          execArgv: vitestExecArgv,
+          // Runner import tests require VM modules; the missing-flag test stays in thread-safe.
+          execArgv: [...vitestExecArgv, '--experimental-vm-modules'],
           pool: 'forks',
           ...laneTestBudget,
           setupFiles: [
@@ -351,7 +359,7 @@ export default defineConfig({
         'packages/api/remotes/src/client/index.ts',
         // The Team browser entry binds its source-covered mount lifecycle to
         // the generated Team Remote contribution, which likewise exists only in lib.
-        'packages/experimental/client-ui-agent-team/src/client/index.ts',
+        'packages/client/ui-agent-team/src/client/index.ts',
         // The speech entry also imports generated Remote definitions; voice-input.e2e.ts
         // exercises the built entry, while source tests cover mountVoiceInput.
         'packages/experimental/client-ui-voice-input/src/client/index.ts',
@@ -406,11 +414,9 @@ export default defineConfig({
         // by decision: its correctness signal is its uninstrumented suite and
         // the packer's end-to-end image spec.
         'packages/experimental/webworker-runtime/src/**/*.ts',
-        // Projection/command round: executor lifecycle branches and the
-        // registry's drive tails need the same maturing lanes. TODO(gui):
-        // cover and remove with the client test lane above.
+        // Command executor lifecycle branches need the same maturing lanes.
+        // TODO(gui): cover and remove with the client test lane above.
         'packages/interaction/commands/src/index.ts',
-        'packages/session/session-projection/src/index.ts',
         ...windowsUnsupportedCoveragePackages.map(path => `${path}/src/**/*.ts`),
         ...windowsOnlyCoverageExclusions,
         ...windowsRunnerCoverageExclusions,

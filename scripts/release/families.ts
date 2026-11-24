@@ -12,11 +12,9 @@
 import { globSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
-  assertClientBuildEnvironment,
   officialClientBuildEnvironment,
   readClientBuildRecord,
 } from '../client-build-environment.ts'
-import { validateTarballPayload } from '../publication-payload.ts'
 import { ON_DEMAND_BUNDLES } from '../../packages/util/official-bundles/src/bundles.ts'
 
 /**
@@ -345,15 +343,6 @@ export abstract class ReleaseFamily {
   abstract readonly installedEntry: InstalledEntry | undefined
 }
 
-/**
- * Client build profile this deployment's desktop build selects.
- *
- * The desktop packaging chain builds the client without `--profile`, so the
- * profile is the public `DSH_CLIENT_BUILD_PROFILE` value the packaging
- * environment supplies; it must equal the value the packaging command sets.
- */
-const HIGHCOM_CLIENT_BUILD_PROFILE = 'highcom'
-
 /** Release packages and apps: one shared version across the whole family. */
 class DshFamily extends ReleaseFamily {
   readonly id = 'dsh'
@@ -363,18 +352,9 @@ class DshFamily extends ReleaseFamily {
   ] as const
   readonly tagPrefix = 'dsh-v'
 
-  /**
-   * Require current artifacts from a complete client build of a known profile.
-   *
-   * This deployment's desktop build selects its own client profile, whose public
-   * environment necessarily differs from the official one; every other profile
-   * must still match the official environment exactly. Reading the record first
-   * keeps its artifact-freshness check in force on both paths.
-   */
+  /** Require current artifacts from a complete official client build. */
   override verifyBuildArtifacts(root: string): void {
-    const environment = readClientBuildRecord(root).environment
-    if (environment.DSH_CLIENT_BUILD_PROFILE === HIGHCOM_CLIENT_BUILD_PROFILE) return
-    assertClientBuildEnvironment(environment, officialClientBuildEnvironment(root))
+    readClientBuildRecord(root, officialClientBuildEnvironment(root))
   }
 
   /**
@@ -406,12 +386,24 @@ class DshFamily extends ReleaseFamily {
   }
 
   /**
-   * Reject source and declaration-map members, the repository's publication policy.
+   * Require the installed package to carry the documentation and source its
+   * manifest promises. `docs` exists only because `prepack` stages it, and a
+   * stale tree in the checkout would satisfy a weaker check, so the staged
+   * copy must be complete for the pack that publishes it.
    * @param member - the packed member.
    * @param files - every path inside its tarball.
    */
   validatePayload(member: ReleaseMember, files: readonly string[]): void {
-    validateTarballPayload(files, member.name)
+    if (member.name !== this.installedEntry.packageName) return
+    if (!files.some(file => file.startsWith('package/docs/') && file.endsWith('.md'))) {
+      throw new Error(`${member.name} packed no documentation`)
+    }
+    if (!files.includes('package/docs/upgrade-guide/README.md')) {
+      throw new Error(`${member.name} packed no upgrade guide index`)
+    }
+    if (!files.some(file => file.startsWith('package/src/') && file.endsWith('.ts'))) {
+      throw new Error(`${member.name} packed no source`)
+    }
   }
 
   /** Publish every advertised on-demand package before the installation that offers it. */
@@ -465,14 +457,12 @@ class VendorFamily extends ReleaseFamily {
   }
 
   /**
-   * Require the payload the vendored manifest declares, including upstream's
-   * `src` tree and declaration maps.
+   * Accept upstream's payload.
    *
-   * The harness policy that rejects both does not apply here: these manifests
-   * export `./src/*` for source navigation, so dropping `src` would publish a
-   * package whose export map points at absent files. What must hold instead is
-   * that every path the manifest selects is present, which `files` already
-   * decides and `pnpm pack` already enforces.
+   * Upstream's manifest owns that payload, so this family enforces no shape of
+   * its own beyond a nonempty tarball. What must hold is that every path the
+   * manifest selects is present, which `files` already decides and `pnpm pack`
+   * already enforces.
    * @param member - the packed member.
    * @param files - every path inside its tarball.
    */

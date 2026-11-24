@@ -151,7 +151,7 @@ it.each([undefined, '2'])('uses bounded Windows packing while retaining signing 
 it('requires one signing preflight before building, then records only the complete release', async () => {
   const { run, stages } = supervisor()
   await packageTarget(parseDesktopPackageInvocation(['win-x64'], 'win32', 'x64'), environment, run)
-  expect(stages.slice(0, 2)).toEqual(['preflight:windows-signing', 'run build'])
+  expect(stages.slice(0, 2)).toEqual(['preflight:windows-signing', 'run build:official'])
   expect(stages.filter(stage => stage === 'preflight:windows-signing')).toHaveLength(1)
   expect(vi.mocked(withWindowsSigningStage).mock.calls.map(([options]) => options.stage))
     .toEqual(['preflight', 'artifacts'])
@@ -183,9 +183,9 @@ it('initializes shared storage only after acquiring the preflight stage lock', a
   await packageTarget(parseDesktopPackageInvocation(['win-x64'], 'win32', 'x64'), environment, run)
 })
 
-it.each(['preflight:windows-signing', 'run build', 'run sign:primary-runtime', 'run prepare:dsh --defer-runtime-smoke', 'run sign:primary-runtime --dsh',
+it.each(['preflight:windows-signing', 'run build:official', 'run sign:primary-runtime', 'run prepare:dsh --defer-runtime-smoke', 'run sign:primary-runtime --dsh',
   'exec tsx scripts/smoke-packaged-runtime.ts',
-  'exec electron-builder --config electron-builder-highcom.config.mjs --win --x64 --publish never'])
+  'exec electron-builder --config electron-builder.config.mjs --win --x64 --publish never'])
 ('never continues or records a release after %s fails', async (failure) => {
   const { run, stages } = supervisor(failure)
   await expect(packageTarget(parseDesktopPackageInvocation(['win-x64'], 'win32', 'x64'), environment, run)).rejects.toThrow('stage refused')
@@ -197,7 +197,7 @@ it.each(['preflight:windows-signing', 'run build', 'run sign:primary-runtime', '
 it.each(['--unsigned', '--prepare-only'])('keeps %s hardware-free and creates no release record', async (mode) => {
   const { run, stages } = supervisor()
   await packageTarget(parseDesktopPackageInvocation(['win-x64', mode], 'win32', 'x64'), environment, run)
-  expect(stages[0]).toBe('run build')
+  expect(stages[0]).toBe(mode === '--unsigned' ? 'run build --profile local' : 'run build:official')
   expect(stages).not.toContain('preflight:windows-signing')
   expect(stages).not.toContain('run sign:primary-runtime')
   expect(stages).not.toContain('run sign:primary-runtime --dsh')
@@ -224,15 +224,15 @@ it.each(['mac-arm64', 'mac-x64', 'win-x64'] as const)('selects branding from the
       DSH_CLIENT_TITLE: 'Inherited title',
     }, run)
     const build = stages.find(stage => stage.startsWith('run build'))
-    expect(build).toBe('run build')
+    expect(build).toBe(unsigned ? 'run build --profile local' : 'run build:official')
     expect(stages.some(stage => stage.startsWith('exec tsx apps/desktop/scripts/pack-local-packages.ts'))).toBe(unsigned)
     expect(stages.some(stage => stage.startsWith('run release:pack --family dsh'))).toBe(!unsigned)
   }
 })
 
 it.each([
-  ['mac-arm64', 'run build'],
-  ['win-x64', 'run build'],
+  ['mac-arm64', 'run build --profile local'],
+  ['win-x64', 'run build --profile local'],
   ['mac-arm64', 'exec tsx apps/desktop/scripts/pack-local-packages.ts'],
   ['win-x64', 'exec tsx apps/desktop/scripts/pack-local-packages.ts'],
 ] as const)('stops unsigned %s packaging when %s fails', async (target, failure) => {
@@ -267,7 +267,7 @@ it.each([
     ...environment, CSC_LINK: 'unused.p12', CSC_KEY_PASSWORD: 'unused-secret', APPLE_API_KEY: 'unused.p8',
     DSH_DESKTOP_MACOS_SIGNING_IDENTITY: 'Unused identity', DSH_DESKTOP_MACOS_TEAM_ID: 'TEAMID1234',
   }, run)
-  expect(stages.at(-2)).toBe(`exec electron-builder --config electron-builder-highcom.config.mjs --mac --${target === 'mac-arm64' ? 'arm64' : 'x64'} --publish never${directory ? ' --dir' : ''}`)
+  expect(stages.at(-2)).toBe(`exec electron-builder --config electron-builder.config.mjs --mac --${target === 'mac-arm64' ? 'arm64' : 'x64'} --publish never${directory ? ' --dir' : ''}`)
   expect(stages.at(-1)).toBe('exec tsx scripts/smoke-packaged-runtime.ts --unsigned')
   for (const call of run.run.mock.calls) {
     expect(call[3].env).toMatchObject({ DSH_DESKTOP_UNSIGNED: '1', CSC_IDENTITY_AUTO_DISCOVERY: 'false' })
@@ -349,7 +349,7 @@ it.each([false, true])('keeps signing and runtime verification when notarization
   await packageTarget(parseDesktopPackageInvocation(['mac-arm64', '--skip-notarization', ...(directory ? ['--dir'] : [])], 'darwin', 'arm64'), {
     ...environment, CSC_LINK: 'signing.p12', CSC_KEY_PASSWORD: 'fixture-password',
   }, run)
-  expect(stages).toContain('exec electron-builder --config electron-builder-highcom.config.mjs --mac --arm64 --publish never --dir')
+  expect(stages).toContain('exec electron-builder --config electron-builder.config.mjs --mac --arm64 --publish never --dir')
   if (!directory) expect(stages.at(-2)).toContain('--mac zip')
   expect(stages.at(-1)).toBe('exec tsx scripts/smoke-packaged-runtime.ts --skip-notarization')
   expect(run.run.mock.calls.at(-2)![3].env).toMatchObject({
@@ -398,7 +398,7 @@ it('fails debugging packages when runtime verification fails', async () => {
 })
 
 it('stops unnotarized ZIP packaging when the DMG stage fails', async () => {
-  const failure = 'exec electron-builder --config electron-builder-highcom.config.mjs --mac dmg'
+  const failure = 'exec electron-builder --config electron-builder.config.mjs --mac dmg'
   const { run, stages } = supervisor(failure)
   await expect(packageTarget(parseDesktopPackageInvocation(['mac-arm64', '--skip-notarization'], 'darwin', 'arm64'), environment, run))
     .rejects.toThrow('stage refused')

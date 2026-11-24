@@ -273,7 +273,7 @@ export function desktopElectronBuilderArguments(
     'exec',
     'electron-builder',
     '--config',
-    'electron-builder-highcom.config.mjs',
+    'electron-builder.config.mjs',
     target.builderPlatform,
     ...(artifact === undefined ? [] : [artifact.format]),
     target.builderArch,
@@ -478,8 +478,7 @@ export async function packageTarget(
         { cwd: APP_ROOT, env: electronBuilderEnv, timeoutMs: 60_000 })
     })
   }
-  // Company client profile: the caller supplies DSH_CLIENT_*, so do not force the official profile.
-  await execute(['run', 'build'], buildEnv, REPOSITORY_ROOT)
+  await execute(invocation.unsigned ? ['run', 'build', '--profile', 'local'] : ['run', 'build:official'], buildEnv, REPOSITORY_ROOT)
   let preparationFailure: { error: unknown } | undefined
   const executePreparation = async (args: readonly string[], env: NodeJS.ProcessEnv, cwd?: string): Promise<void> => {
     if (preparationFailure !== undefined) throw preparationFailure.error

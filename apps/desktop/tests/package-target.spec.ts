@@ -64,7 +64,7 @@ describe('desktop package target', () => {
       'exec',
       'electron-builder',
       '--config',
-      'electron-builder-highcom.config.mjs',
+      'electron-builder.config.mjs',
       '--mac',
       '--arm64',
       '--publish',

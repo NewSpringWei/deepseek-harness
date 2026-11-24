@@ -103,10 +103,7 @@ export function selectDesktopPackageClosure(
 }
 
 function packedManifest(tarball: string): Record<string, unknown> {
-  // The staging path is absolute; Windows GNU tar reads a drive letter as a remote host.
-  // --force-local is a GNU extension, so it is added only where that tar is the resolver.
-  const forceLocal = process.platform === 'win32' ? ['--force-local'] : []
-  const value: unknown = JSON.parse(capture('tar', [...forceLocal, '-xOzf', tarball, 'package/package.json']))
+  const value: unknown = JSON.parse(capture('tar', ['-xOzf', tarball, 'package/package.json']))
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(`desktop package set: ${tarball} has no package manifest`)
   }

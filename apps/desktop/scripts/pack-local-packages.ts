@@ -18,15 +18,8 @@ async function main(): Promise<void> {
   if (values.out === undefined) throw new Error('desktop local pack: --out must name the package staging directory')
   const concurrency = parsePackConcurrency(values.concurrency)
   const root = process.cwd()
-  // Upstream asserts the named local profile (which recomputes and discards inherited values).
-  // Company client profiles are injected as a complete DSH_CLIENT_* set by the packaging entry
-  // and are not expressible in resolveClientBuildEnvironment, so those skip the environment
-  // assertion and rely on the artifact digest.
-  const profile = repositoryClientBuildEnvironment(root).DSH_CLIENT_BUILD_PROFILE
-  const expected = profile === undefined || profile === 'local' || profile === 'official'
-    ? resolveClientBuildEnvironment(repositoryClientBuildEnvironment(root), profile ?? 'local')
-    : undefined
-  readClientBuildRecord(root, expected)
+  const environment = resolveClientBuildEnvironment(repositoryClientBuildEnvironment(root), 'local')
+  readClientBuildRecord(root, environment)
   const destination = resolve(root, values.out)
   const packed = await packFamilyMembers(root, releaseFamily('dsh'), destination, concurrency)
   console.log(`desktop local pack: ${String(packed.length)} tarball(s) in ${destination}`)
