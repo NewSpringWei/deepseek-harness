@@ -8,6 +8,7 @@ import {
   assertDesktopHostPackageFiles,
   prepareDesktopPackageSet,
   selectDesktopPackageClosure,
+  tarPathArguments,
   type PackedDesktopPackage,
 } from '../scripts/prepare-package-set.ts'
 
@@ -153,7 +154,9 @@ it('copies no macOS tarball into the Windows package set', () => {
         writeFileSync(join(folder, file), '')
       }
     }
-    execFileSync('tar', ['-czf', join(inputs, `${stem}.tgz`), '-C', join(folder, '..'), 'package'])
+    // The fixture path is absolute, so the flag follows the tar the test resolves.
+    execFileSync('tar', [...tarPathArguments(),
+      '-czf', join(inputs, `${stem}.tgz`), '-C', join(folder, '..'), 'package'])
   }
   const output = join(root, 'output')
   prepareDesktopPackageSet([inputs], output, { platform: 'win32', arch: 'x64' })

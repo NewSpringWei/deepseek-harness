@@ -81,14 +81,15 @@ it('opens native menus without stealing pointer focus and resets popup state whe
   await vi.waitFor(() => { expect(button.getAttribute('aria-expanded')).toBe('false') })
 })
 
-it('moves between menu entries with arrow keys and opens the focused entry with ArrowDown', () => {
+it('keeps the sole menu entry focused on arrow keys and opens it with ArrowDown', () => {
   menu = installWindowsMenu()
   const buttons = document.querySelector('[data-windows-menu]')!.shadowRoot!.querySelectorAll('button')
+  // Highcom Work renders the application menu alone, so the arrow-key step has no sibling to move to.
+  expect(buttons).toHaveLength(1)
   buttons[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true }))
-  expect(buttons[0]!.tabIndex).toBe(-1)
-  expect(buttons[1]!.tabIndex).toBe(0)
-  buttons[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', cancelable: true }))
-  expect(invoke).toHaveBeenCalledWith(DESKTOP_IPC.windowsMenu, 'edit', 0, 0)
+  expect(buttons[0]!.tabIndex).toBe(0)
+  buttons[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', cancelable: true }))
+  expect(invoke).toHaveBeenCalledWith(DESKTOP_IPC.windowsMenu, 'application', 0, 0)
 })
 
 it('restores a text input and its selection before opening a keyboard menu', async () => {
@@ -118,7 +119,7 @@ it('reports a failed popup request and clears the active menu', async () => {
   expect(button.getAttribute('aria-expanded')).toBe('false')
 })
 
-it('restores a contenteditable selection before opening Edit with the keyboard', async () => {
+it('restores a contenteditable selection before opening the application menu with the keyboard', async () => {
   const editor = document.createElement('div')
   editor.contentEditable = 'true'
   editor.setAttribute('contenteditable', 'true')
@@ -135,9 +136,8 @@ it('restores a contenteditable selection before opening Edit with the keyboard',
   document.getSelection()!.addRange(range)
   buttons[0]!.focus()
   document.getSelection()!.removeAllRanges()
-  buttons[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true }))
-  buttons[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', cancelable: true }))
+  buttons[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', cancelable: true }))
   expect(document.activeElement).toBe(editor)
   expect(document.getSelection()!.toString()).toBe('itable')
-  await vi.waitFor(() => { expect(buttons[1]!.getAttribute('aria-expanded')).toBe('false') })
+  await vi.waitFor(() => { expect(buttons[0]!.getAttribute('aria-expanded')).toBe('false') })
 })

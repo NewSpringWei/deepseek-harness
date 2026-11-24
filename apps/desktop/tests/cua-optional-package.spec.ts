@@ -7,6 +7,7 @@ import { join, resolve } from 'node:path'
 import { execa } from 'execa'
 import { expect, it, onTestFinished } from 'vitest'
 import { pnpmCommand } from '../../../scripts/release/process.ts'
+import { tarPathArguments } from '../scripts/prepare-package-set.ts'
 
 const repository = resolve(import.meta.dirname, '../../..')
 const providerName = '@deepseek-ai/dsh-experimental-cua-macos'
@@ -69,7 +70,9 @@ it('fetches the macOS optional tarball only for Darwin, with an empty cache for 
     const bytes = await readFile(join(directory, 'package.tgz'))
     packages.set(name, { manifest, bytes })
     if (name === providerName) {
-      const result = await execa('tar', ['-tzf', join(directory, 'package.tgz')])
+      // The fixture path is absolute, so the flag follows the tar the test resolves.
+      const result = await execa('tar', [...tarPathArguments(),
+        '-tzf', join(directory, 'package.tgz')])
       expect(result.stdout).toContain('package/native/bin/darwin-arm64/current.json')
       expect(result.stdout).toContain(`package/${nativePayload}`)
     }

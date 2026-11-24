@@ -102,8 +102,24 @@ export function selectDesktopPackageClosure(
   return [...selected.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([, packed]) => packed)
 }
 
+/** Whether the resolved `tar` reported itself as GNU tar; computed once per process. */
+let gnuTar: boolean | undefined
+
+/**
+ * Resolve the prefix the resolved `tar` needs for an absolute Windows path.
+ * GNU tar reads a drive letter as a remote host and needs `--force-local`; the bsdtar
+ * shipped with Windows rejects that GNU-only option and reads the drive path directly.
+ * @returns `['--force-local']` for GNU tar on Windows, otherwise an empty list.
+ */
+export function tarPathArguments(): string[] {
+  if (process.platform !== 'win32') return []
+  gnuTar ??= capture('tar', ['--version']).startsWith('tar (GNU tar)')
+  return gnuTar ? ['--force-local'] : []
+}
+
 function packedManifest(tarball: string): Record<string, unknown> {
-  const value: unknown = JSON.parse(capture('tar', ['-xOzf', tarball, 'package/package.json']))
+  // The staging path is absolute, so the flag follows the tar the build resolves.
+  const value: unknown = JSON.parse(capture('tar', [...tarPathArguments(), '-xOzf', tarball, 'package/package.json']))
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(`desktop package set: ${tarball} has no package manifest`)
   }
